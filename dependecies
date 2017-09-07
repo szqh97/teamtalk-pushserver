@@ -1,0 +1,6 @@
+python >=2.7.9
+hyper
+celery
+tornado
+redis
+virtualenv
