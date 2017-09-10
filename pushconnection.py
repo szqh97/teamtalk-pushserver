@@ -81,7 +81,7 @@ class PushConn(object):
 
     @coroutine
     def _handleHeartBeat(self, pdu):
-        logger.info("_handleHeartBeat")
+        logger.debug("_handleHeartBeat")
         try:
             if self._stream.closed():
                 logger.warn ("socket is closed")
@@ -90,31 +90,31 @@ class PushConn(object):
         except Exception as e:
             logger.error(traceback.format_exc())
             raise e
-        logger.info("test {}".format(pdu.command_id))
     
     @coroutine
     def _handlePushMsg(self, pdu):
         logger.info("_handlePushMsg")
         msg_buf = pdu.msg
-        msg = Server_pb2.IMPushToUserReq()
-        msg.FromString(msg_buf)
+        msg = Server_pb2.IMPushToUserReq.FromString(msg_buf)
         push_flash = msg.flash
         push_data = msg.data
+        logger.info(u"push_flash:[{}], push_data:[{}]".format(push_flash, push_data))
 
         respmsg = Server_pb2.IMPushToUserRsp()
 
         def _push_proc(user_token):
             assert(isinstance(user_token, BaseDefine_pb2.UserTokenInfo))
-            push_result = BaseDefine_pb2.PushResult()
+            idx = user_token.token.find(":")
+            token = user_token.token[idx+1:]
+            push_result = respmsg.add()
             push_result.Clear()
-            push_result.user_token = user_token.token
+            push_result.user_token = token
             push_result.result_code = 0
-            respmsg.push_result_list.append(push_result)
             if user_token.user_type == BaseDefine_pb2.CLIENT_TYPE_IOS:
-                ios_push_cmd = IOSPushCmd(user_token.token, push_flash, push_data)
+                ios_push_cmd = IOSPushCmd(token, push_flash, push_data)
                 ios_push_cmd.async_push_msg()
             elif user_token.user_type == BaseDefine_pb2.CLIENT_TYPE_ANDROID:
-                android_push_cmd = AndroidPushCmd()
+                android_push_cmd = AndroidPushCmd(token, push_flash, push_data)
                 android_push_cmd.async_push_msg()
 
         map(_push_proc, msg.user_token_list)

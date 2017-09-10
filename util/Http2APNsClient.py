@@ -24,7 +24,7 @@ class APNs2Client(object):
         self._uri = uri
         self._certfile = certfile
         self._conn = HTTP20Connection(self._uri, ssl_context=
-                tls.init_context(cert=self._certfile))
+                tls.init_context(cert=self._certfile), force_proto="h2")
 
     def ping(self):
         """
@@ -35,7 +35,7 @@ class APNs2Client(object):
         except Exception as e:
             logger.warn("reconnecting APNs server")
             self._conn = HTTP20Connection(self._uri, ssl_context=
-                tls.init_context(cert=self._certfile))
+                tls.init_context(cert=self._certfile), force_proto="h2")
             logger.error(traceback.format_exc())
 
     def push_msg(self, token, payload, headers):
